@@ -8,7 +8,7 @@ export const authApi = {
   async login(credentials: LoginCredentials): Promise<BaseResponse<AuthResponse> | ErrorResponse> {
     try {
       const response = await ApiManager.post<BaseResponse<AuthResponse>>(
-        "/cms/auth/login",
+        "/app/auth/login",
         credentials
       );
       
@@ -46,11 +46,36 @@ export const authApi = {
   }): Promise<BaseResponse<AuthResponse> | ErrorResponse> {
     try {
       const response = await ApiManager.post<BaseResponse<AuthResponse>>(
-        "/cms/auth/signup",
+        "/app/auth/signup",
         data
       );
-      return response.data;
+      
+      // Backend returns BaseResponse format via TransformInterceptor
+      // response.data is already BaseResponse<AuthResponse>
+      if (response.data) {
+        // Check if it's already in BaseResponse format
+        if ('statusCode' in response.data && 'data' in response.data) {
+          return response.data;
+        }
+        
+        // If response.data is the raw AuthResponse (shouldn't happen with TransformInterceptor)
+        // but handle it just in case
+        if ('accessToken' in response.data && 'refreshToken' in response.data) {
+          return {
+            statusCode: response.status || 201,
+            data: response.data as unknown as AuthResponse,
+          };
+        }
+      }
+      
+      // Fallback
+      return {
+        statusCode: response.status || 201,
+        data: response.data as unknown as AuthResponse,
+      };
     } catch (error: any) {
+      console.error("Signup API error:", error);
+      
       // Handle validation errors
       if (error.response?.status === 400) {
         const errorMessage = error.response?.data?.message || 
@@ -64,10 +89,16 @@ export const authApi = {
         };
       }
       
+      // Handle other errors
+      const errorData = error.response?.data;
+      if (errorData && 'statusCode' in errorData) {
+        return errorData as ErrorResponse;
+      }
+      
       return {
         statusCode: error.response?.status || 500,
-        message: error.response?.data?.message || "Signup failed",
-        error: error.message,
+        message: error.response?.data?.message || error.message || "Signup failed",
+        error: error.message || "Unknown error",
       };
     }
   },
@@ -78,7 +109,7 @@ export const authApi = {
   async refreshToken(refreshToken: string): Promise<BaseResponse<RefreshTokenResponse> | ErrorResponse> {
     try {
       const response = await ApiManager.post<BaseResponse<RefreshTokenResponse>>(
-        "/cms/auth/refresh-token",
+        "/app/auth/refresh-token",
         { refreshToken }
       );
       return response.data;
@@ -97,7 +128,7 @@ export const authApi = {
   async forgotPassword(email: string): Promise<BaseResponse<{ message: string }> | ErrorResponse> {
     try {
       const response = await ApiManager.post<BaseResponse<{ message: string }>>(
-        "/cms/auth/forgot-password",
+        "/app/auth/forgot-password",
         { email }
       );
       return response.data;
@@ -119,7 +150,7 @@ export const authApi = {
   }): Promise<BaseResponse<{ message: string }> | ErrorResponse> {
     try {
       const response = await ApiManager.post<BaseResponse<{ message: string }>>(
-        "/cms/auth/reset-password",
+        "/app/auth/reset-password",
         data
       );
       return response.data;

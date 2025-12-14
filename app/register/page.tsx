@@ -39,13 +39,23 @@ export default function RegisterPage() {
         password: formData.password,
       });
 
-      if ("statusCode" in response && response.statusCode !== 200) {
-        toast.error(response.message || "Registration failed");
+      // Check if response has statusCode
+      if ("statusCode" in response) {
+        const statusCode = response.statusCode;
+        // Success status codes (200-299)
+        if (statusCode >= 200 && statusCode < 300) {
+          toast.success("Registration successful! Please log in.");
+          router.push(ROUTES.AUTH.LOGIN);
+        } else {
+          // Error status codes
+          toast.error(response.message || "Registration failed");
+        }
       } else {
-        toast.success("Registration successful! Please log in.");
-        router.push(ROUTES.AUTH.LOGIN);
+        // Should not happen, but handle gracefully
+        toast.error("Unexpected response format");
       }
     } catch (error) {
+      console.error("Registration error:", error);
       toast.error("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
