@@ -74,3 +74,4 @@ All components automatically use theme colors via Tailwind classes:
 - Use `primary-600` for hover states
 - Use `primary-400` for light backgrounds
 
+
