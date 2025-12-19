@@ -1,6 +1,22 @@
 "use client";
 
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/lib/routes";
+
 export default function TopBar() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ redirect: false });
+      router.push(ROUTES.AUTH.LOGIN);
+      router.refresh();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   return (
     <header className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 h-16 flex items-center justify-between px-6">
       {/* Search */}
@@ -23,6 +39,14 @@ export default function TopBar() {
         <button className="relative p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white transition-colors">
           <span className="text-xl">🔔</span>
           <span className="absolute top-0 right-0 w-2 h-2 bg-error-500 rounded-full"></span>
+        </button>
+
+        {/* Logout Button - Temporary */}
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-error-500 hover:bg-error-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+        >
+          Logout
         </button>
 
         {/* User Profile */}

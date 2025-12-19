@@ -13,31 +13,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary brand color (main accent)
+        // Primary brand color (warm yellow to orange gradient)
         primary: {
-          50: "##ebab34",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#ebab34", // Main primary color - CHANGE THIS for brand color
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
+          50: "#fffbeb", // Lightest yellow
+          100: "#fef3c7", // Very light yellow
+          200: "#fde68a", // Light yellow
+          300: "#fcd34d", // Medium yellow
+          400: "#fbbf24", // Yellow
+          500: "#f59e0b", // Main primary color - warm yellow/orange
+          600: "#d97706", // Darker orange
+          700: "#b45309", // Deep orange
+          800: "#92400e", // Dark orange
+          900: "#78350f", // Darkest orange
         },
-        // Secondary/neutral colors
+        // Secondary/neutral colors (warm beige/cream tones)
         secondary: {
-          50: "#fafafa",
-          100: "#f4f4f5",
-          200: "#e4e4e7",
-          300: "#d4d4d8",
-          400: "#a1a1aa",
-          500: "#71717a",
-          600: "#52525b",
-          700: "#3f3f46",
-          800: "#27272a",
-          900: "#18181b",
+          50: "#fefbf5", // Softest beige (background)
+          100: "#faf7f0", // Very light beige
+          200: "#f5f1e8", // Light beige
+          300: "#e8e3d5", // Medium beige
+          400: "#d4cdb8", // Warm gray-beige
+          500: "#a8a08a", // Medium warm gray
+          600: "#7d7562", // Darker warm gray
+          700: "#5a5344", // Dark warm gray
+          800: "#3d372d", // Very dark warm gray
+          900: "#2a251f", // Darkest warm gray
         },
         // Success/positive actions
         success: {
@@ -92,7 +92,67 @@ module.exports = {
           900: "#1e3a8a",
         },
       },
+      // Card utility classes for global transparent shadow look
+      boxShadow: {
+        card: "0 2px 8px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        "card-hover":
+          "0 8px 16px 0 rgba(0, 0, 0, 0.12), 0 2px 4px 0 rgba(0, 0, 0, 0.08)",
+      },
+      backdropBlur: {
+        card: "8px",
+        "card-strong": "12px",
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    // Plugin to add card utility classes
+    function ({ addUtilities }) {
+      const newUtilities = {
+        ".card": {
+          "background-color": "rgba(255, 255, 255, 0.4)",
+          "backdrop-filter": "blur(12px)",
+          "border-radius": "0.75rem",
+          border: "1px solid rgba(0, 0, 0, 0.08)",
+          "box-shadow":
+            "0 2px 8px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+          transition: "all 0.2s ease-in-out",
+        },
+        ".card-transparent": {
+          "background-color": "rgba(255, 255, 255, 0.3)",
+          "backdrop-filter": "blur(16px)",
+          border: "1px solid rgba(0, 0, 0, 0.06)",
+        },
+        ".card-elevated": {
+          "background-color": "rgba(255, 255, 255, 0.6)",
+          "backdrop-filter": "blur(10px)",
+          border: "1px solid rgba(0, 0, 0, 0.1)",
+          "box-shadow":
+            "0 4px 12px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.06)",
+        },
+        ".dark .card": {
+          "background-color": "rgba(45, 55, 72, 0.4)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+        },
+        ".dark .card-transparent": {
+          "background-color": "rgba(45, 55, 72, 0.3)",
+        },
+        ".dark .card-elevated": {
+          "background-color": "rgba(45, 55, 72, 0.6)",
+        },
+        ".card-hover": {
+          "&:hover": {
+            "box-shadow":
+              "0 8px 16px 0 rgba(0, 0, 0, 0.12), 0 2px 4px 0 rgba(0, 0, 0, 0.08)",
+            "background-color": "rgba(255, 255, 255, 0.6)",
+          },
+        },
+        ".dark .card-hover": {
+          "&:hover": {
+            "background-color": "rgba(45, 55, 72, 0.6)",
+          },
+        },
+      };
+      addUtilities(newUtilities);
+    },
+  ],
 };

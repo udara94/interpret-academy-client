@@ -9,7 +9,7 @@ export default function DialogsPage() {
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow">
+        <div className="card card-hover p-6">
           <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
             Dialog 1
           </h2>
@@ -18,7 +18,7 @@ export default function DialogsPage() {
           </p>
         </div>
         
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow">
+        <div className="card card-hover p-6">
           <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
             Dialog 2
           </h2>
@@ -27,7 +27,7 @@ export default function DialogsPage() {
           </p>
         </div>
         
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-lg shadow">
+        <div className="card card-hover p-6">
           <h2 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
             Dialog 3
           </h2>

@@ -38,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-secondary-900 dark:to-secondary-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#e3e5e6] to-[#ede0b0] dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-900">
       <div className="w-full max-w-md p-8 bg-white dark:bg-secondary-800 rounded-lg shadow-lg">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">
