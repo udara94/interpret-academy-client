@@ -1,6 +1,6 @@
 export default function DashboardPage() {
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto p-6 pt-20">
       <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-4">
         Dashboard
       </h1>
