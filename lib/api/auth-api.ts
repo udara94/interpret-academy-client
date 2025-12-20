@@ -162,5 +162,63 @@ export const authApi = {
       };
     }
   },
+
+  /**
+   * Sign in or sign up with Google OAuth
+   * Backend automatically assigns the "user" role
+   */
+  async googleAuth(data: {
+    email: string;
+    name: string;
+    googleId: string;
+    picture?: string;
+  }): Promise<BaseResponse<AuthResponse> | ErrorResponse> {
+    try {
+      console.log("Calling Google auth API with data:", { email: data.email, name: data.name });
+      const response = await ApiManager.post<BaseResponse<AuthResponse>>(
+        "/app/auth/google",
+        data
+      );
+      
+      console.log("Google auth API response:", response);
+      
+      if (!response.data) {
+        console.error("No data in response");
+        return {
+          statusCode: 500,
+          message: "No data in response",
+          error: "Empty response from server",
+        };
+      }
+      
+      // Check if response has the expected structure
+      if ("statusCode" in response.data && "data" in response.data) {
+        const baseResponse = response.data as BaseResponse<AuthResponse>;
+        if (!baseResponse.data || !baseResponse.data.accessToken) {
+          console.error("Invalid response structure - missing accessToken");
+          return {
+            statusCode: 500,
+            message: "Invalid response structure",
+            error: "Missing access token in response",
+          };
+        }
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error("Google Auth API error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
+      // Return error response
+      const errorResponse: ErrorResponse = {
+        statusCode: error.response?.status || 500,
+        message: error.response?.data?.message || error.message || "Google authentication failed",
+        error: error.message || "Unknown error",
+      };
+      
+      return errorResponse;
+    }
+  },
 };
 
