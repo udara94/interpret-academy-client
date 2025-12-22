@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { ROUTES } from "@/lib/routes";
 import { authApi } from "@/lib/api/auth-api";
@@ -56,7 +56,6 @@ export default function RegisterPage() {
         toast.error("Unexpected response format");
       }
     } catch (error) {
-      console.error("Registration error:", error);
       toast.error("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -66,36 +65,34 @@ export default function RegisterPage() {
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
     try {
-      console.log("Initiating Google sign-up...");
       const result = await signIn("google", {
         redirect: false,
         callbackUrl: ROUTES.DASHBOARD.HOME,
       });
 
-      console.log("Sign-up result:", result);
-
       if (result?.error) {
-        console.error("Sign-up error:", result.error);
         toast.error(`Google sign-up failed: ${result.error}`);
         setIsLoading(false);
       } else if (result?.ok && result?.url) {
         // Redirect to Google OAuth page
-        console.log("Redirecting to Google OAuth...");
+        // After OAuth completes, NextAuth will redirect to the callback page
         window.location.href = result.url;
       } else if (result?.ok) {
-        // Already authenticated, redirect to dashboard
-        console.log("Sign-up successful, redirecting...");
+        // Already authenticated, check if user needs to select language
         toast.success("Registration successful!");
-        setTimeout(() => {
-          router.push(ROUTES.DASHBOARD.HOME);
+        setTimeout(async () => {
+          const session = await getSession();
+          if (session?.user && !session.user.languageId) {
+            router.push(ROUTES.SELECT_LANGUAGE);
+          } else {
+            router.push(ROUTES.DASHBOARD.HOME);
+          }
           router.refresh();
         }, 500);
       } else {
-        console.log("Sign-up result unclear:", result);
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("Sign-up exception:", error);
       toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }

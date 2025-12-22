@@ -13,6 +13,7 @@ export const ROUTES = {
     DIALOG_DETAILS: (id: string) => `/dashboard/dialogs/${id}`,
     PRACTICE: "/dashboard/practice",
   },
+  SELECT_LANGUAGE: "/select-language",
 } as const;
 
 

@@ -23,9 +23,6 @@ export const authApi = {
       // Backend returns BaseResponse format
       return response.data;
     } catch (error: any) {
-      console.error("API Error:", error);
-      console.error("Error response:", error.response?.data);
-      
       return {
         statusCode: error.response?.status || 500,
         message: error.response?.data?.message || error.message || "Login failed",
@@ -74,8 +71,6 @@ export const authApi = {
         data: response.data as unknown as AuthResponse,
       };
     } catch (error: any) {
-      console.error("Signup API error:", error);
-      
       // Handle validation errors
       if (error.response?.status === 400) {
         const errorMessage = error.response?.data?.message || 
@@ -174,16 +169,12 @@ export const authApi = {
     picture?: string;
   }): Promise<BaseResponse<AuthResponse> | ErrorResponse> {
     try {
-      console.log("Calling Google auth API with data:", { email: data.email, name: data.name });
       const response = await ApiManager.post<BaseResponse<AuthResponse>>(
         "/app/auth/google",
         data
       );
       
-      console.log("Google auth API response:", response);
-      
       if (!response.data) {
-        console.error("No data in response");
         return {
           statusCode: 500,
           message: "No data in response",
@@ -195,7 +186,6 @@ export const authApi = {
       if ("statusCode" in response.data && "data" in response.data) {
         const baseResponse = response.data as BaseResponse<AuthResponse>;
         if (!baseResponse.data || !baseResponse.data.accessToken) {
-          console.error("Invalid response structure - missing accessToken");
           return {
             statusCode: 500,
             message: "Invalid response structure",
@@ -206,9 +196,6 @@ export const authApi = {
       
       return response.data;
     } catch (error: any) {
-      console.error("Google Auth API error:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
       
       // Return error response
       const errorResponse: ErrorResponse = {

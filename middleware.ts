@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
+const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/select-language", "/auth/callback"];
 
 // API auth prefix
 const apiAuthPrefix = "/api/auth";
@@ -39,6 +39,15 @@ export default auth((req: { auth: any; nextUrl: NextRequest["nextUrl"] }) => {
   // Protect dashboard routes - redirect to login if not authenticated
   if (!isLoggedIn && nextUrl.pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
+  // Redirect from select-language if user already has languageId
+  if (isLoggedIn && nextUrl.pathname === "/select-language") {
+    const user = req.auth?.user;
+    const hasLanguageId = user?.languageId !== null && user?.languageId !== undefined && user?.languageId !== "";
+    if (user && hasLanguageId) {
+      return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+    }
   }
 
   return NextResponse.next();

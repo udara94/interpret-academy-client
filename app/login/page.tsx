@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { ROUTES } from "@/lib/routes";
@@ -27,7 +27,14 @@ export default function LoginPage() {
         toast.error("Invalid email or password");
       } else if (result?.ok) {
         toast.success("Login successful!");
-        router.push(ROUTES.DASHBOARD.HOME);
+        
+        // Check if user needs to select language
+        const session = await getSession();
+        if (session?.user && !session.user.languageId) {
+          router.push(ROUTES.SELECT_LANGUAGE);
+        } else {
+          router.push(ROUTES.DASHBOARD.HOME);
+        }
         router.refresh();
       }
     } catch (error) {
@@ -40,36 +47,34 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      console.log("Initiating Google sign-in...");
       const result = await signIn("google", {
         redirect: false,
         callbackUrl: ROUTES.DASHBOARD.HOME,
       });
 
-      console.log("Sign-in result:", result);
-
       if (result?.error) {
-        console.error("Sign-in error:", result.error);
         toast.error(`Google sign-in failed: ${result.error}`);
         setIsLoading(false);
       } else if (result?.ok && result?.url) {
         // Redirect to Google OAuth page
-        console.log("Redirecting to Google OAuth...");
+        // After OAuth completes, NextAuth will redirect to the callback page
         window.location.href = result.url;
       } else if (result?.ok) {
-        // Already authenticated, redirect to dashboard
-        console.log("Sign-in successful, redirecting...");
+        // Already authenticated, check if user needs to select language
         toast.success("Login successful!");
-        setTimeout(() => {
-          router.push(ROUTES.DASHBOARD.HOME);
+        setTimeout(async () => {
+          const session = await getSession();
+          if (session?.user && !session.user.languageId) {
+            router.push(ROUTES.SELECT_LANGUAGE);
+          } else {
+            router.push(ROUTES.DASHBOARD.HOME);
+          }
           router.refresh();
         }, 500);
       } else {
-        console.log("Sign-in result unclear:", result);
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("Sign-in exception:", error);
       toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
