@@ -75,3 +75,4 @@ All components automatically use theme colors via Tailwind classes:
 - Use `primary-400` for light backgrounds
 
 
+

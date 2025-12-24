@@ -31,7 +31,11 @@ export default function Sidebar() {
       {/* Navigation Items - Vertical */}
       <nav className="flex-1 p-4 space-y-1">
         {navigationItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          // For Home route, only match exact path to avoid matching sub-routes
+          // For other routes, match exact path or sub-routes
+          const isActive = item.href === ROUTES.DASHBOARD.HOME
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.name}

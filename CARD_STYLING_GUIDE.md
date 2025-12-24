@@ -187,3 +187,4 @@ Card styles are integrated with the global theme:
 
 For theme changes, update `lib/theme.ts` and the card styles will automatically reflect the changes.
 
+
