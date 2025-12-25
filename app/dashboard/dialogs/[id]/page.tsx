@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { segmentsApi, SegmentItem, EnglishSegment, InterpretedSegmentItem } from "@/lib/api/segments-api";
+import { dialogsApi } from "@/lib/api/dialogs-api";
 import { ROUTES } from "@/lib/routes";
 import Link from "next/link";
 
@@ -16,6 +17,7 @@ export default function DialogDetailsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dialogTitle, setDialogTitle] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
@@ -33,9 +35,30 @@ export default function DialogDetailsPage() {
 
   useEffect(() => {
     if (dialogId) {
+      loadDialog();
       loadSegments();
     }
   }, [dialogId]);
+
+  const loadDialog = async () => {
+    if (!dialogId) return;
+    
+    try {
+      const response = await dialogsApi.getDialogById(dialogId);
+      
+      if ("statusCode" in response && response.statusCode >= 400) {
+        const errorResponse = response as any;
+        setDialogTitle("");
+        return;
+      }
+      
+      const dialog = response as any;
+      setDialogTitle(dialog.title || "");
+    } catch (error: any) {
+      console.error("Load dialog error:", error);
+      setDialogTitle("");
+    }
+  };
 
   useEffect(() => {
     // Reset state when segment changes
@@ -571,6 +594,11 @@ export default function DialogDetailsPage() {
           >
             <span className="mr-2">←</span> Back to Dialogs
           </Link>
+          {dialogTitle && (
+            <h1 className="text-2xl font-bold text-secondary-900 dark:text-white mt-4">
+              {dialogTitle}
+            </h1>
+          )}
         </div>
         
         {isLoading ? (

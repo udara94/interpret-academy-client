@@ -86,5 +86,58 @@ export const dialogsApi = {
       };
     }
   },
+
+  /**
+   * Get a single dialog by ID
+   */
+  async getDialogById(dialogId: string): Promise<Dialog | ErrorResponse> {
+    try {
+      const session = await getSession();
+      if (!session?.accessToken) {
+        return {
+          statusCode: 401,
+          message: "Not authenticated",
+          error: "Authentication required",
+        };
+      }
+
+      const response = await ApiManager.get<BaseResponse<Dialog>>(
+        `/app/dialogs/${dialogId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+        }
+      );
+      
+      if (!response.data) {
+        return {
+          statusCode: 500,
+          message: "No data in response",
+          error: "Empty response from server",
+        };
+      }
+      
+      const wrappedResponse = response.data as BaseResponse<Dialog>;
+      
+      if (wrappedResponse.statusCode >= 400) {
+        return {
+          statusCode: wrappedResponse.statusCode,
+          message: (wrappedResponse as any).message || "Failed to fetch dialog",
+          error: (wrappedResponse as any).error || "Unknown error",
+        };
+      }
+      
+      return wrappedResponse.data;
+    } catch (error: any) {
+      console.error("Get Dialog API error:", error);
+      
+      return {
+        statusCode: error.response?.status || 500,
+        message: error.response?.data?.message || error.message || "Failed to fetch dialog",
+        error: error.message || "Unknown error",
+      };
+    }
+  },
 };
 
