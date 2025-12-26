@@ -17,7 +17,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white/40 dark:bg-secondary-800/40 backdrop-blur-[12px] border-r border-secondary-200/80 dark:border-secondary-700/80 shadow-md h-screen flex flex-col">
+    <aside className="w-64 bg-white/40 dark:bg-secondary-800/40 backdrop-blur-[12px] border-r border-secondary-200/80 dark:border-secondary-700/80 shadow-md h-screen fixed left-0 top-0 flex flex-col z-40">
       {/* Logo & Name */}
       <div className="p-6 border-b border-secondary-200/80 dark:border-secondary-700/80">
         <Link href={ROUTES.DASHBOARD.HOME} className="flex items-center space-x-3">
@@ -29,7 +29,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Items - Vertical */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           // For Home route, only match exact path to avoid matching sub-routes
           // For other routes, match exact path or sub-routes
