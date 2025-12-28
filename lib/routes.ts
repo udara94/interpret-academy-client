@@ -12,6 +12,8 @@ export const ROUTES = {
     DIALOGS: "/dashboard/dialogs",
     DIALOG_DETAILS: (id: string) => `/dashboard/dialogs/${id}`,
     PRACTICE: "/dashboard/practice",
+    PAYMENTS: "/dashboard/payments",
+    PREMIUM: "/dashboard/payments", // Alias for payments
   },
   SELECT_LANGUAGE: "/select-language",
 } as const;
