@@ -41,6 +41,10 @@ export default auth((req: { auth: any; nextUrl: NextRequest["nextUrl"] }) => {
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
+  // Don't redirect for languageId in middleware - let pages handle it
+  // This prevents issues with stale session data after payment
+  // Pages will check and refresh session if needed
+
   // Redirect from select-language if user already has languageId
   if (isLoggedIn && nextUrl.pathname === "/select-language") {
     const user = req.auth?.user;

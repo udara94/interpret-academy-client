@@ -1,6 +1,7 @@
 import ApiManager from "./api-manager";
 import { BaseResponse, ErrorResponse } from "@/types";
 import { getSession } from "next-auth/react";
+import { profileApi } from "./profile-api";
 
 export interface Dialog {
   id: string;
@@ -33,9 +34,31 @@ export const dialogsApi = {
         };
       }
 
-      // Get languageId from user session
-      const languageId = session.user?.languageId;
+      // Get languageId from user session, or fetch from backend if missing
+      let languageId = session.user?.languageId;
+      
       if (!languageId) {
+        // Try to fetch user profile from backend to get latest languageId
+        console.log("Language ID missing from session, fetching from backend...");
+        try {
+          const profileResponse = await profileApi.getProfile();
+          if ("statusCode" in profileResponse && profileResponse.statusCode === 200) {
+            const baseResponse = profileResponse as BaseResponse<any>;
+            languageId = baseResponse.data?.languageId;
+            
+            if (languageId) {
+              console.log("Language ID retrieved from backend:", languageId);
+              // Note: We don't update the session here to avoid redirect issues
+              // The languageId will be fetched from backend on each request if needed
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        }
+      }
+      
+      if (!languageId) {
+        console.warn("Language ID still missing after fetching profile");
         return {
           statusCode: 400,
           message: "Language not selected",

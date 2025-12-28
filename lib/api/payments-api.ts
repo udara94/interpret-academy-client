@@ -14,10 +14,23 @@ export interface CreateCheckoutSessionResponse {
   url: string;
 }
 
+export interface PaymentDetails {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentProvider: 'stripe' | 'apple_iap' | 'google_iap';
+  externalTransactionId: string;
+  createdAt: string;
+  productName: string;
+  productDays: number;
+  features: string[];
+}
+
 export interface VerifySessionResponse {
   success: boolean;
   message: string;
   membershipDays: number;
+  payment: PaymentDetails;
 }
 
 export interface MembershipProduct {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -21,13 +21,7 @@ export default function Sidebar() {
   const { data: session, status } = useSession();
   const [hasActiveMembership, setHasActiveMembership] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (status === "authenticated" && session?.accessToken) {
-      checkMembershipStatus();
-    }
-  }, [status, session, pathname]); // Also check when pathname changes (user navigates)
-
-  const checkMembershipStatus = async () => {
+  const checkMembershipStatus = useCallback(async () => {
     if (!session?.accessToken) return;
 
     try {
@@ -46,7 +40,31 @@ export default function Sidebar() {
       // On error, assume no active membership (show premium access tab)
       setHasActiveMembership(false);
     }
-  };
+  }, [session?.accessToken]);
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.accessToken) {
+      checkMembershipStatus();
+    }
+  }, [status, session, pathname, checkMembershipStatus]); // Also check when pathname changes (user navigates)
+
+  // Listen for membership status changes (e.g., after successful payment)
+  useEffect(() => {
+    const handleMembershipStatusChange = () => {
+      // Add a small delay to ensure backend has processed the payment
+      setTimeout(() => {
+        if (status === "authenticated" && session?.accessToken) {
+          checkMembershipStatus();
+        }
+      }, 1000); // 1 second delay
+    };
+
+    window.addEventListener('membership-status-changed', handleMembershipStatusChange);
+    
+    return () => {
+      window.removeEventListener('membership-status-changed', handleMembershipStatusChange);
+    };
+  }, [status, session, checkMembershipStatus]);
 
   // Filter navigation items based on membership status
   // Show "premium access" only if user doesn't have active membership
