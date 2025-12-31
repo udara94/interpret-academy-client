@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { ROUTES } from "@/lib/routes";
-import { paymentsApi } from "@/lib/api/payments-api";
+import { useMembership } from "@/lib/hooks/use-membership";
 
 const allNavigationItems = [
   { name: "Home", href: ROUTES.DASHBOARD.HOME, icon: "🏠" },
@@ -18,57 +16,11 @@ const allNavigationItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const [hasActiveMembership, setHasActiveMembership] = useState<boolean | null>(null);
-
-  const checkMembershipStatus = useCallback(async () => {
-    if (!session?.accessToken) return;
-
-    try {
-      const response = await paymentsApi.getMembershipStatus(session.accessToken as string);
-      
-      if ("statusCode" in response && response.statusCode >= 400) {
-        // If error, assume no active membership (show premium access tab)
-        setHasActiveMembership(false);
-      } else {
-        // Check if membership is active
-        const membershipStatus = response as { isActive: boolean };
-        setHasActiveMembership(membershipStatus.isActive);
-      }
-    } catch (error) {
-      console.error("Error checking membership status:", error);
-      // On error, assume no active membership (show premium access tab)
-      setHasActiveMembership(false);
-    }
-  }, [session?.accessToken]);
-
-  useEffect(() => {
-    if (status === "authenticated" && session?.accessToken) {
-      checkMembershipStatus();
-    }
-  }, [status, session, pathname, checkMembershipStatus]); // Also check when pathname changes (user navigates)
-
-  // Listen for membership status changes (e.g., after successful payment)
-  useEffect(() => {
-    const handleMembershipStatusChange = () => {
-      // Add a small delay to ensure backend has processed the payment
-      setTimeout(() => {
-        if (status === "authenticated" && session?.accessToken) {
-          checkMembershipStatus();
-        }
-      }, 1000); // 1 second delay
-    };
-
-    window.addEventListener('membership-status-changed', handleMembershipStatusChange);
-    
-    return () => {
-      window.removeEventListener('membership-status-changed', handleMembershipStatusChange);
-    };
-  }, [status, session, checkMembershipStatus]);
+  const { hasActiveMembership, isLoading } = useMembership();
 
   // Filter navigation items based on membership status
   // Show "premium access" only if user doesn't have active membership
-  const navigationItems = hasActiveMembership === null
+  const navigationItems = isLoading
     ? allNavigationItems // Show all while loading
     : allNavigationItems.filter(item => 
         item.name !== "premium access" || !hasActiveMembership

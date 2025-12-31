@@ -46,9 +46,17 @@ export default auth((req: { auth: any; nextUrl: NextRequest["nextUrl"] }) => {
   // Pages will check and refresh session if needed
 
   // Redirect from select-language if user already has languageId
+  // But only if we're sure they have it (not null, undefined, or empty string)
   if (isLoggedIn && nextUrl.pathname === "/select-language") {
     const user = req.auth?.user;
-    const hasLanguageId = user?.languageId !== null && user?.languageId !== undefined && user?.languageId !== "";
+    // Check if user has a valid languageId (not null, undefined, or empty)
+    const hasLanguageId = user?.languageId && 
+                         user.languageId !== null && 
+                         user.languageId !== undefined && 
+                         user.languageId !== "";
+    
+    // Only redirect if we're certain they have a languageId
+    // This prevents redirect loops when session is being updated
     if (user && hasLanguageId) {
       return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
     }

@@ -1,6 +1,7 @@
 import ApiManager from "./api-manager";
 import { BaseResponse, ErrorResponse } from "@/types";
 import { getSession } from "next-auth/react";
+import { profileApi } from "./profile-api";
 
 export interface EnglishSegment {
   id: string;
@@ -55,7 +56,24 @@ export const segmentsApi = {
       }
 
       // Get languageId from user session
-      const languageId = session.user?.languageId;
+      let languageId = session.user?.languageId;
+      
+      // If languageId is not in session (common for newly created users),
+      // try to fetch it from the profile API as a fallback
+      if (!languageId) {
+        try {
+          const profileResponse = await profileApi.getProfile();
+          if ("statusCode" in profileResponse && profileResponse.statusCode === 200) {
+            const baseResponse = profileResponse as any;
+            const userProfile = baseResponse.data;
+            languageId = userProfile?.languageId;
+          }
+        } catch (error) {
+          console.error("Error fetching profile for languageId:", error);
+          // Continue to return error below
+        }
+      }
+      
       if (!languageId) {
         return {
           statusCode: 400,

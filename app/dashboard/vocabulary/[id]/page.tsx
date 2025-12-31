@@ -5,47 +5,70 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { wordsApi, WordWithInterpretation } from "@/lib/api/words-api";
 import { wordCategoriesApi, WordCategory } from "@/lib/api/word-categories-api";
+import { useMembership } from "@/lib/hooks/use-membership";
 import { ROUTES } from "@/lib/routes";
 import Link from "next/link";
+import PremiumAccessModal from "@/components/ui/PremiumAccessModal";
 
 export default function CategoryDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { hasActiveMembership } = useMembership();
   const categoryId = params?.id as string;
 
   const [category, setCategory] = useState<WordCategory | null>(null);
   const [words, setWords] = useState<WordWithInterpretation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     if (categoryId) {
       loadCategory();
+    }
+  }, [categoryId, hasActiveMembership]);
+
+  // Only load words if category is loaded and user has access
+  useEffect(() => {
+    if (category && !showPremiumModal && (category.isFree || hasActiveMembership)) {
       loadWords();
     }
-  }, [categoryId]);
+  }, [category, showPremiumModal, hasActiveMembership]);
 
   const loadCategory = async () => {
+    setIsLoading(true);
+    
     try {
-      const session = await import("next-auth/react").then((m) => m.getSession());
-      if (!session?.accessToken) {
-        toast.error("Not authenticated");
+      const response = await wordCategoriesApi.getWordCategoryById(categoryId);
+
+      if ("statusCode" in response && response.statusCode >= 400) {
+        const errorResponse = response as any;
+        setError(errorResponse.message || "Failed to load category");
+        toast.error(errorResponse.message || "Failed to load category");
+        setCategory(null);
+        setIsLoading(false);
         return;
       }
 
-      const response = await wordCategoriesApi.getWordCategoryById(
-        categoryId,
-        session.accessToken as string
-      );
+      const categoryData = response as WordCategory;
+      setCategory(categoryData);
 
-      if ("statusCode" in response && response.statusCode >= 400) {
-        toast.error(response.message || "Failed to load category");
-      } else {
-        setCategory(response as WordCategory);
+      // Check if user needs premium access
+      // Only show modal if category is premium AND user doesn't have active membership
+      if (!categoryData.isFree && !hasActiveMembership) {
+        setShowPremiumModal(true);
+        setIsLoading(false);
+        return;
       }
+
+      // If user has access, continue to load words
+      setIsLoading(false);
     } catch (error: any) {
       console.error("Error loading category:", error);
+      setError("An error occurred while loading the category");
       toast.error("Failed to load category");
+      setCategory(null);
+      setIsLoading(false);
     }
   };
 
@@ -62,8 +85,10 @@ export default function CategoryDetailsPage() {
 
         // Handle specific error cases
         if (response.statusCode === 400 && errorResponse.message?.includes("Language not selected")) {
+          // Note: We don't redirect to language select here - that's only done during login/registration
+          // If language is missing, just show an error message
+          setError("Please select a language in your profile to view vocabulary");
           toast.warning("Please select a language in your profile");
-          router.push(ROUTES.SELECT_LANGUAGE);
           return;
         }
 
@@ -97,13 +122,18 @@ export default function CategoryDetailsPage() {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowPremiumModal(false);
+    router.push("/dashboard/vocabulary");
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6 pt-20">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           <p className="ml-4 text-secondary-600 dark:text-secondary-400">
-            Loading words...
+            Loading category...
           </p>
         </div>
       </div>
@@ -112,6 +142,15 @@ export default function CategoryDetailsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 pt-20">
+      <PremiumAccessModal
+        isOpen={showPremiumModal}
+        onClose={handleCloseModal}
+        dialogTitle={category?.category}
+        contentType="vocabulary"
+      />
+      
+      {!showPremiumModal && (
+        <>
       {/* Header */}
       <div className="mb-6">
         <Link
@@ -224,6 +263,8 @@ export default function CategoryDetailsPage() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );

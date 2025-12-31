@@ -1,29 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { wordCategoriesApi, WordCategory } from "@/lib/api/word-categories-api";
+import { useMembership } from "@/lib/hooks/use-membership";
 import Link from "next/link";
 
 export default function VocabularyPage() {
-  const router = useRouter();
+  const { hasActiveMembership } = useMembership();
   const [categories, setCategories] = useState<WordCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "free" | "paid">("all");
 
   useEffect(() => {
     loadCategories();
-  }, [filter]);
+  }, []);
 
   const loadCategories = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const isFree = filter === "free" ? true : filter === "paid" ? false : undefined;
-      const response = await wordCategoriesApi.getWordCategories(isFree);
+      const response = await wordCategoriesApi.getWordCategories();
 
       // Check if it's an error response
       if ("statusCode" in response && response.statusCode >= 400) {
@@ -68,40 +66,6 @@ export default function VocabularyPage() {
         Browse and learn vocabulary by category
       </p>
 
-      {/* Filter Tabs */}
-      <div className="mb-6 flex gap-2">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === "all"
-              ? "bg-primary-600 text-white"
-              : "bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-          }`}
-        >
-          All Categories
-        </button>
-        <button
-          onClick={() => setFilter("free")}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === "free"
-              ? "bg-primary-600 text-white"
-              : "bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-          }`}
-        >
-          Free
-        </button>
-        <button
-          onClick={() => setFilter("paid")}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === "paid"
-              ? "bg-primary-600 text-white"
-              : "bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-          }`}
-        >
-          Paid
-        </button>
-      </div>
-
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -140,15 +104,18 @@ export default function VocabularyPage() {
                 <h2 className="text-xl font-semibold text-secondary-900 dark:text-white flex-1 pr-2">
                   {category.category}
                 </h2>
-                <span
-                  className={`px-2 py-1 text-xs font-semibold rounded flex-shrink-0 ${
-                    category.isFree
-                      ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                      : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                  }`}
-                >
-                  {category.isFree ? "Free" : "Paid"}
-                </span>
+                {/* Only show Free/Premium labels if user doesn't have active membership */}
+                {hasActiveMembership !== true && (
+                  category.isFree ? (
+                    <span className="px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded flex-shrink-0">
+                      Free
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded flex-shrink-0">
+                      Premium
+                    </span>
+                  )
+                )}
               </div>
               {category.description && (
                 <p className="text-secondary-600 dark:text-secondary-400 line-clamp-3 flex-1">

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { dialogsApi, Dialog } from "@/lib/api/dialogs-api";
+import { useMembership } from "@/lib/hooks/use-membership";
 import { ROUTES } from "@/lib/routes";
 import Link from "next/link";
 
 export default function DialogsPage() {
-  const router = useRouter();
+  const { hasActiveMembership } = useMembership();
   const [dialogs, setDialogs] = useState<Dialog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,9 +29,12 @@ export default function DialogsPage() {
         const errorResponse = response as any;
         
         // Handle specific error cases
+        // Note: We don't redirect to language select here - that's only done during login/registration
+        // If language is missing, just show an error message
         if (response.statusCode === 400 && errorResponse.message?.includes("Language not selected")) {
+          setError("Please select a language in your profile to view dialogs");
           toast.warning("Please select a language in your profile");
-          router.push(ROUTES.SELECT_LANGUAGE);
+          setDialogs([]);
           return;
         }
         
@@ -109,10 +112,17 @@ export default function DialogsPage() {
                 <h2 className="text-xl font-semibold text-secondary-900 dark:text-white flex-1 pr-2">
                   {dialog.title}
                 </h2>
-                {dialog.isFree && (
-                  <span className="px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded flex-shrink-0">
-                    Free
-                  </span>
+                {/* Only show Free/Premium labels if user doesn't have active membership */}
+                {hasActiveMembership !== true && (
+                  dialog.isFree ? (
+                    <span className="px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded flex-shrink-0">
+                      Free
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded flex-shrink-0">
+                      Premium
+                    </span>
+                  )
                 )}
               </div>
               {dialog.description && (

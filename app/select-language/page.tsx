@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { getSession } from "next-auth/react";
+import { useSession, getSession } from "next-auth/react";
 import { languagesApi, Language } from "@/lib/api/languages-api";
 import { profileApi } from "@/lib/api/profile-api";
 import { authApi } from "@/lib/api/auth-api";
@@ -11,6 +11,7 @@ import { ROUTES } from "@/lib/routes";
 
 export default function SelectLanguagePage() {
   const router = useRouter();
+  const { data: session, update } = useSession();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [selectedLanguageId, setSelectedLanguageId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +90,7 @@ export default function SelectLanguagePage() {
         toast.success("Language selected successfully!");
         
         // Get updated user data from API to verify the update
+        let languageUpdated = false;
         try {
           const profileResponse = await profileApi.getProfile();
           
@@ -101,16 +103,59 @@ export default function SelectLanguagePage() {
               setIsSubmitting(false);
               return;
             }
+            languageUpdated = true;
           }
         } catch (error) {
-          // Silently continue - the update was successful
+          console.error("Error verifying language update:", error);
+          // Continue - we'll try to update session anyway
         }
         
-        // Redirect to dashboard after successful language selection
-        setTimeout(() => {
-          router.push(ROUTES.DASHBOARD.HOME);
-          router.refresh();
-        }, 500);
+        // Update the session to refresh user data including languageId
+        // This triggers the JWT callback with trigger === "update" which will refresh the token
+        // For new users, we need to wait for the session to actually update
+        if (languageUpdated) {
+          try {
+            await update();
+            
+            // Wait a bit and verify session was updated
+            // This is especially important for new users
+            let attempts = 0;
+            const maxAttempts = 5;
+            while (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+              const updatedSession = await getSession();
+              
+              if (updatedSession?.user?.languageId) {
+                // Session updated successfully
+                router.push(ROUTES.DASHBOARD.HOME);
+                router.refresh();
+                return;
+              }
+              attempts++;
+            }
+            
+            // If session still doesn't have languageId after retries, 
+            // redirect anyway (the backend has the languageId)
+            router.push(ROUTES.DASHBOARD.HOME);
+            router.refresh();
+          } catch (error) {
+            console.error("Error updating session:", error);
+            // Continue anyway - the language was updated in the backend
+            router.push(ROUTES.DASHBOARD.HOME);
+            router.refresh();
+          }
+        } else {
+          // If we couldn't verify, still try to update and redirect
+          try {
+            await update();
+          } catch (error) {
+            console.error("Error updating session:", error);
+          }
+          setTimeout(() => {
+            router.push(ROUTES.DASHBOARD.HOME);
+            router.refresh();
+          }, 1000);
+        }
       } else {
         const errorResponse = response as any;
         toast.error(errorResponse.message || "Failed to update language");

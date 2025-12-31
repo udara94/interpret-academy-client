@@ -2,15 +2,19 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { segmentsApi, SegmentItem, EnglishSegment, InterpretedSegmentItem } from "@/lib/api/segments-api";
-import { dialogsApi } from "@/lib/api/dialogs-api";
+import { dialogsApi, Dialog } from "@/lib/api/dialogs-api";
+import { useMembership } from "@/lib/hooks/use-membership";
 import { ROUTES } from "@/lib/routes";
 import Link from "next/link";
+import PremiumAccessModal from "@/components/ui/PremiumAccessModal";
 
 export default function DialogDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { hasActiveMembership } = useMembership();
   const dialogId = params?.id as string;
   
   const [segments, setSegments] = useState<SegmentItem[]>([]);
@@ -18,6 +22,8 @@ export default function DialogDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogTitle, setDialogTitle] = useState<string>("");
+  const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [isTextExpanded, setIsTextExpanded] = useState(false);
@@ -36,12 +42,13 @@ export default function DialogDetailsPage() {
   useEffect(() => {
     if (dialogId) {
       loadDialog();
-      loadSegments();
     }
-  }, [dialogId]);
+  }, [dialogId, hasActiveMembership]);
 
   const loadDialog = async () => {
     if (!dialogId) return;
+    
+    setIsLoading(true);
     
     try {
       const response = await dialogsApi.getDialogById(dialogId);
@@ -49,14 +56,32 @@ export default function DialogDetailsPage() {
       if ("statusCode" in response && response.statusCode >= 400) {
         const errorResponse = response as any;
         setDialogTitle("");
+        setDialog(null);
+        setError(errorResponse.message || "Failed to load dialog");
+        setIsLoading(false);
         return;
       }
       
-      const dialog = response as any;
-      setDialogTitle(dialog.title || "");
+      const dialogData = response as Dialog;
+      setDialog(dialogData);
+      setDialogTitle(dialogData.title || "");
+      
+      // Check if user needs premium access
+      // Only show modal if dialog is premium AND user doesn't have active membership
+      if (!dialogData.isFree && !hasActiveMembership) {
+        setShowPremiumModal(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If user has access, load segments
+      await loadSegments();
     } catch (error: any) {
       console.error("Load dialog error:", error);
       setDialogTitle("");
+      setDialog(null);
+      setError("An error occurred while loading the dialog");
+      setIsLoading(false);
     }
   };
 
@@ -145,8 +170,11 @@ export default function DialogDetailsPage() {
         const errorResponse = response as any;
         
         if (response.statusCode === 400 && errorResponse.message?.includes("Language not selected")) {
+          // Note: We don't redirect to language select here - that's only done during login/registration
+          // If language is missing, just show an error message
+          setError("Please select a language in your profile to view this dialog");
           toast.warning("Please select a language in your profile");
-          router.push(ROUTES.SELECT_LANGUAGE);
+          setSegments([]);
           return;
         }
         
@@ -584,24 +612,36 @@ export default function DialogDetailsPage() {
     : null;
 
 
+  const handleCloseModal = () => {
+    setShowPremiumModal(false);
+    router.push(ROUTES.DASHBOARD.DIALOGS);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#e3e5e6] to-[#ede0b0] dark:from-secondary-900 dark:via-secondary-800 dark:to-secondary-900">
-      <div className="max-w-6xl mx-auto p-6 pt-20">
-        <div className="mb-6">
-          <Link
-            href={ROUTES.DASHBOARD.DIALOGS}
-            className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4 inline-flex items-center -ml-4"
-          >
-            <span className="mr-2">←</span> Back to Dialogs
-          </Link>
-          {dialogTitle && (
-            <h1 className="text-2xl font-bold text-secondary-900 dark:text-white mt-4">
-              {dialogTitle}
-            </h1>
-          )}
-        </div>
-        
-        {isLoading ? (
+      <PremiumAccessModal
+        isOpen={showPremiumModal}
+        onClose={handleCloseModal}
+        dialogTitle={dialogTitle}
+      />
+      
+      {!showPremiumModal && (
+        <div className="max-w-6xl mx-auto p-6 pt-20">
+          <div className="mb-6">
+            <Link
+              href={ROUTES.DASHBOARD.DIALOGS}
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4 inline-flex items-center -ml-4"
+            >
+              <span className="mr-2">←</span> Back to Dialogs
+            </Link>
+            {dialogTitle && (
+              <h1 className="text-2xl font-bold text-secondary-900 dark:text-white mt-4">
+                {dialogTitle}
+              </h1>
+            )}
+          </div>
+          
+          {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             <p className="ml-4 text-secondary-600 dark:text-secondary-400">
@@ -824,7 +864,8 @@ export default function DialogDetailsPage() {
             </div>
           </div>
         ) : null}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
